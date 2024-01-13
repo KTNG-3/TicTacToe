@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Tic-Tac-Toe</title>
+</head>
+
+<body>
+       <div id="main">
+              <h1>Tic-Tac-Toe</h1>
+              <p>Made By ING3_</p>
+
+              <div class="ui">
+                     <div class="row">
+                            <input type="text" id="box1" class="cell" onclick="play(1)" readonly>
+                            <input type="text" id="box2" class="cell" onclick="play(2);" readonly>
+                            <input type="text" id="box3" class="cell" onclick="play(3);" readonly>
+                     </div>
+
+                     <div class="row">
+                            <input type="text" id="box4" class="cell" onclick="play(4);" readonly>
+                            <input type="text" id="box5" class="cell" onclick="play(5);" readonly>
+                            <input type="text" id="box6" class="cell" onclick="play(6);" readonly>
+                     </div>
+
+                     <div class="row">
+                            <input type="text" id="box7" class="cell" onclick="play(7);" readonly>
+                            <input type="text" id="box8" class="cell" onclick="play(8);" readonly>
+                            <input type="text" id="box9" class="cell" onclick="play(9);" readonly>
+                     </div>
+              </div>
+
+              <button id="but" onclick="reset()">RESET</button>
+              <br>
+
+              <p id="print"></p>
+              <p id="you"></p>
+       </div>
+</body>
+
+<script>
+       let player = "";
+
+       fetch(`http://${window.location.host}/player`, {
+              method: "GET"
+       }).then(async (data) => {
+              player = await data.text();
+
+              console.log("player: " + player);
+
+              document.getElementById("you").innerText = `Your Player: ${player == 1 ? "X" : "O"}`;
+       });
+
+       async function play(position) {
+              await fetch(`http://${window.location.host}/place/${player}/${position}`, {
+                     method: "GET"
+              });
+       }
+
+       let IsDone = false;
+
+       async function reset() {
+              if (player == "0") return;
+              if (!IsDone) return;
+
+              await fetch(`http://${window.location.host}/reset`, {
+                     method: "GET"
+              });
+
+              IsDone = false;
+       }
+
+       async function get() {
+              const response = await fetch(`http://${window.location.host}/json`, {
+                     method: "GET"
+              });
+
+              let board = (await response.json()).map(p => {
+                     if (p == 1) {
+                            return "X";
+                     }
+
+                     if (p == 2) {
+                            return "O";
+                     }
+
+                     return " ";
+              });
+
+              document.getElementById("box1").value = board[0];
+              document.getElementById("box2").value = board[1];
+              document.getElementById("box3").value = board[2];
+              document.getElementById("box4").value = board[3];
+              document.getElementById("box5").value = board[4];
+              document.getElementById("box6").value = board[5];
+              document.getElementById("box7").value = board[6];
+              document.getElementById("box8").value = board[7];
+              document.getElementById("box9").value = board[8];
+       }
+
+       async function status () {
+              const response = await fetch(`http://${window.location.host}/status`, {
+                     method: "GET"
+              });
+
+              return response.text();
+       }
+
+       async function turn () {
+              const response = await fetch(`http://${window.location.host}/turn`, {
+                     method: "GET"
+              });
+
+              return response.text();
+       }
+
+       var intervalId = window.setInterval(async function () {
+              await get();
+
+              if (player == "0") return;
+              if (IsDone) return;
+
+              document.getElementById("print").innerText = `Current Turn: ${await turn() == 1 ? "X" : "O"}`;
+
+              switch (await status()) {
+                     case "0": {
+                            break;
+                     }
+                     case "1": {
+                            window.alert("\"X\" Win");
+                            IsDone = true;
+                            break;
+                     }
+                     case "2": {
+                            window.alert("\"O\" Win");
+                            IsDone = true;
+                            break;
+                     }
+                     case "3": {
+                            window.alert("Tie");
+                            IsDone = true;
+                            break;
+                     }
+              }
+       }, 500);
+</script>
+
+</html>
