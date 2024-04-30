@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Tic-Tac-Toe</title>
+</head>
+
+<body>
+       <div id="main">
+              <h1>Tic-Tac-Toe</h1>
+
+              <p id="enemy"></p>
+
+              <div class="ui">
+                     <div class="row">
+                            <input type="text" id="box0" class="cell" onclick="play(0)" readonly>
+                            <input type="text" id="box1" class="cell" onclick="play(1);" readonly>
+                            <input type="text" id="box2" class="cell" onclick="play(2);" readonly>
+                     </div>
+
+                     <div class="row">
+                            <input type="text" id="box3" class="cell" onclick="play(3);" readonly>
+                            <input type="text" id="box4" class="cell" onclick="play(4);" readonly>
+                            <input type="text" id="box5" class="cell" onclick="play(5);" readonly>
+                     </div>
+
+                     <div class="row">
+                            <input type="text" id="box6" class="cell" onclick="play(6);" readonly>
+                            <input type="text" id="box7" class="cell" onclick="play(7);" readonly>
+                            <input type="text" id="box8" class="cell" onclick="play(8);" readonly>
+                     </div>
+              </div>
+
+              <p id="you"></p>
+
+              <h2 id="print"></h2>
+
+              <button id="but" onclick="leave()">LEAVE</button>
+       </div>
+</body>
+
+<script>
+       let session = {};
+
+       if (!document.cookie) {
+              window.alert("session not found");
+              window.location.href = "/";
+       }
+
+       fetch(`http://${window.location.host}/session/get/${document.cookie}`, {
+              method: "GET",
+       }).then(async (data) => {
+              session = await data.json();
+       });
+
+       let isMyTurn = false;
+       let isGameSuccess = false;
+
+       async function play(position) {
+              if (isGameSuccess) return;
+              if (!isMyTurn) return;
+              if (document.getElementById(`box${position}`).value !== " ") return;
+
+              await fetch(`http://${window.location.host}/game/player/place/${session.gameId}/${session.playerId}/${position}`, {
+                     method: "PUT",
+              });
+       }
+
+       function replacePlayer(player) {
+              if (player == 1) {
+                     return "X";
+              }
+
+              if (player == 2) {
+                     return "O";
+              }
+
+              return " ";
+       }
+
+       let enemyName = "";
+
+       async function get() {
+              const response = await fetch(`http://${window.location.host}/game/get/${session.gameId}`, {
+                     method: "GET",
+              });
+
+              const json = await response.json();
+
+              // board
+
+              let board = json.game.map(p => replacePlayer(p));
+
+              document.getElementById("box0").value = board[0];
+              document.getElementById("box1").value = board[1];
+              document.getElementById("box2").value = board[2];
+              document.getElementById("box3").value = board[3];
+              document.getElementById("box4").value = board[4];
+              document.getElementById("box5").value = board[5];
+              document.getElementById("box6").value = board[6];
+              document.getElementById("box7").value = board[7];
+              document.getElementById("box8").value = board[8];
+
+              // self
+
+              isMyTurn = json.turn === json.player[session.playerId];
+
+              let userText = `${session.name} (${replacePlayer(json.player[session.playerId]).replace(" ", "-")})`;
+              if (isMyTurn) userText = `${userText} - Your Turn`;
+
+              document.getElementById("you").innerText = userText;
+
+              // enemy
+
+              const enemyPlayerId = Object.keys(json.player).find(x => x !== session.playerId);
+
+              if (!enemyName) {
+                     const nameRes = await fetch(`http://${window.location.host}/game/get/${session.gameId}`, {
+                            method: "GET",
+                     });
+
+                     enemyName = (await nameRes.json()).name;
+              }
+
+              let enemyText = `${enemyName} (${replacePlayer(json.player[enemyPlayerId]).replace(" ", "-")})`;
+              if (!isMyTurn) enemyText = `${enemyText} - Enemy Turn`;
+
+              document.getElementById("enemy").innerText = enemyText;
+
+              return json.status;
+       }
+
+       async function leave() {
+              await fetch(`http://${window.location.host}/game/player/leave/${session.gameId}/${session.playerId}`, {
+                     method: "DELETE",
+              });
+
+              window.location.href = "/user";
+       }
+
+       var intervalId = window.setInterval(async function () {
+              if (isGameSuccess) return;
+
+              const status = await get();
+
+              if (status === 0) return;
+
+              isGameSuccess = true;
+              switch (status) {
+                     case 1: {
+                            document.getElementById("print").innerText = "\"X\" Win";
+                            break;
+                     }
+                     case 2: {
+                            document.getElementById("print").innerText = "\"O\" Win";
+                            break;
+                     }
+                     case 3: {
+                            document.getElementById("print").innerText = "Tie";
+                            break;
+                     }
+                     case -1: {
+                            document.getElementById("print").innerText = "Your opponent left the game";
+                            break;
+                     }
+              }
+       }, 500);
+</script>
+
+</html>

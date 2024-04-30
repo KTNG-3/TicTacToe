@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+</head>
+
+<body>
+    <div id="main">
+        <h1>Tic-Tac-Toe</h1>
+        <p>Made By ING3_</p>
+
+        <p id="playerName"></p>
+        <p id="playerId"></p>
+
+        <button id="matchmaker" onclick="matchMaking()">Match Making</button>
+        <br>
+    </div>
+</body>
+
+<script>
+    let session = {};
+
+    if (!document.cookie) {
+        window.alert("session not found");
+        window.location.href = "/";
+    }
+
+    fetch(`http://${window.location.host}/session/get/${document.cookie}`, {
+        method: "GET",
+    }).then(async (data) => {
+        session = await data.json();
+
+        document.getElementById("playerName").innerText = `Name: ${session.name}`;
+        document.getElementById("playerId").innerText = `ID: ${session.playerId}`;
+    });
+
+    async function setSession(obj) {
+        await fetch(`http://${window.location.host}/session/set/${document.cookie}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(obj)
+        });
+    }
+
+    let isMatchMaking = false;
+
+    async function getMatchMaking() {
+        isMatchMaking = true;
+
+        document.getElementById("matchmaker").innerText = "Finding...";
+
+        const res = await fetch(`http://${window.location.host}/match/get/${session.playerId}`, {
+            method: "GET",
+        });
+
+        const gameId = await res.text();
+        if (!gameId) return;
+
+        await setSession({
+            playerId: session.playerId,
+            gameId: gameId
+        });
+
+        window.location.href = "/game";
+    }
+
+    async function matchMaking() {
+        if (isMatchMaking) return;
+
+        await fetch(`http://${window.location.host}/match/join/${session.playerId}`, {
+            method: "POST",
+        });
+
+        window.setInterval(async () => {
+            await getMatchMaking();
+        }, 500)
+    }
+</script>
+
+</html>

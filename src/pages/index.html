@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+</head>
+
+<body>
+    <form>
+        <label>Name:</label><br>
+        <input type="text" id="inputName"><br>
+    </form>
+
+    <button id="but" onclick="login()">Login</button>
+    <br>
+</body>
+
+<script>
+    async function setSession(obj) {
+        if (!document.cookie) {
+            const res = await fetch(`http://${window.location.host}/session/new`, {
+                method: "POST"
+            });
+
+            document.cookie = await res.text();
+        }
+
+        await fetch(`http://${window.location.host}/session/set/${document.cookie}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(obj)
+        });
+    }
+
+    async function login() {
+        const name = document.getElementById("inputName").value;
+
+        const res = await fetch(`http://${window.location.host}/user/get/name/${name}`, {
+            method: "GET"
+        });
+
+        await setSession({
+            name: name,
+            playerId: (await res.json()).id
+        });
+
+        window.location.href = "/user";
+    }
+</script>
+
+</html>
